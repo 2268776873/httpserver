@@ -12,9 +12,9 @@
 #include "client_mes_map.hpp"
 #include <signal.h>
 
-
+const char *IP="192.168.3.128";
 const int PORT=1997;
-const int MAX_EVENT=10000;
+const int MAX_EVENT=60000;
 int curlinked = 0;
 
 int main(){
@@ -25,7 +25,7 @@ int main(){
     socklen_t client_addr_len;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_addr.s_addr = inet_addr(IP);
 
     int listen_sock=socket(AF_INET, SOCK_STREAM, 0);
 
@@ -95,7 +95,8 @@ int main(){
                     int newsock = accept(cursk, (sockaddr *)&client_addr, &client_addr_len);
                     if(newsock == -1){
                         perror("accept");
-                        exit(-1);
+                        continue;
+                        //exit(-1);
                     }
                     tmp_ee.data.fd = newsock;
                     tmp_ee.events = EPOLLIN | EPOLLRDHUP | EPOLLET | EPOLLONESHOT;
