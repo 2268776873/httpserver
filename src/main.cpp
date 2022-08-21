@@ -9,12 +9,12 @@
 #include <errno.h>
 #include "threadpool.hpp"
 #include "worker.hpp"
-#include "client_mes_map.hpp"
+#include "client_manager.hpp"
 #include <signal.h>
 
 const char *IP="192.168.3.128";
 const int PORT=1997;
-const int MAX_EVENT=60000;
+const int MAX_EVENT=1000;
 int curlinked = 0;
 
 int main(){
@@ -63,7 +63,7 @@ int main(){
         exit(-1);
     }
 
-    client_mes_map cmm;
+    client_manager cmm;
     worker workthread(&cmm, ep_fd);
     threadpool thread_pool(&workthread);
 
