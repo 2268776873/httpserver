@@ -4,43 +4,59 @@
 #include <sys/time.h>
 #include <time.h>
 #include <list>
+#include <vector>
 #include <unordered_map>
 #include <iterator>
-
+//LRU contains timers which record last reading time and responsible to close connection
 class active_timer{
 public:
     active_timer(int _fd):fd(_fd),fresh_time(time(0)){}
     void fresh(){
         fresh_time = time(0);
     }
-    void destory(){
-
-    }
-private:
     int fresh_time;
     int fd;
 };
 
 class timer_LRU{
 public:
+    timer_LRU(int _time):max_sleep_time(_time){}
     void add(int fd){
-        active_timer *timerp = new active_timer(fd);
-        l.emplace_front(timerp);
+        l.emplace_front(fd);
         m[fd]=l.begin();
     }
     void fresh(int fd){
+        m[fd]->fresh();
 
     }
+    void erase(int fd){
+        //if connectiong is closed by client, this func is passive
+        l.erase(m[fd]);
+        m.erase(fd);
+    }
+    int count(int fd){
+        return m.count(fd);
+    }
+    //return LRU socket
+    int last_one(){
+        return l.back().fd;
+    }
+    std::vector<int> sleeper(){
+        int cur=time(0);
+        std::vector<int> sleep;
+
+        for(active_timer time : l){
+            if(time.fresh_time - cur > max_sleep_time){
+                sleep.push_back(time.fd);
+            }
+        }
+        return sleep;
+    }
 private:
-    std::list<active_timer*> l;
-    std::unordered_map<int,std::list<active_timer*>::iterator> m;
-
+    std::list<active_timer> l;
+    std::unordered_map<int,std::list<active_timer>::iterator> m;
+    int max_sleep_time;
 };
-
-
-void clear_dead_connection(){
-
-}
 
 
 

@@ -17,14 +17,13 @@ int main(){
     sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("121.5.163.177");
+    server_addr.sin_addr.s_addr = inet_addr("192.168.3.128");
 
     for(int i=0;i<20000;++i){
         if(fork()==0)
             break;
         usleep(rand()%10000);
         std::cout<<i<<std::endl;
-
     }
 
 
@@ -47,7 +46,7 @@ int main(){
         memset(buf, 0, 1024);
 
         ++i;
-        //usleep(100000);
+        sleep(10);
         if(i == getpid())
             return 1;
     }

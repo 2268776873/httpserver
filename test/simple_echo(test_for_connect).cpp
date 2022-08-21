@@ -19,13 +19,6 @@ int main(){
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr("192.168.3.128");
 
-    // for(int i=0;i<20000;++i){
-    //     if(fork()==0)
-    //         break;
-    //     usleep(rand()%10000);
-    //     std::cout<<i<<std::endl;
-
-    // }
 
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -47,9 +40,8 @@ int main(){
         memset(buf, 0, 1024);
 
         ++i;
-        //usleep(100000);
-        if(i == getpid())
-            return 1;
+        usleep(1000);
+
     }
     
     return 1;

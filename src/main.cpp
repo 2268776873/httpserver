@@ -15,7 +15,15 @@
 const char *IP="192.168.3.128";
 const int PORT=1997;
 const int MAX_EVENT=1000;
-int curlinked = 0;
+const int ALARM_TIME=9;
+const int MAX_SLEEP_TIME=9;
+
+void alarmaciton(int sig){
+    client_manager::tik=1;
+    alarm(ALARM_TIME);
+    return;
+}
+
 
 int main(){
 
@@ -63,7 +71,7 @@ int main(){
         exit(-1);
     }
 
-    client_manager cmm;
+    client_manager cmm(MAX_EVENT, ep_fd, MAX_SLEEP_TIME);
     worker workthread(&cmm, ep_fd);
     threadpool thread_pool(&workthread);
 
@@ -71,8 +79,16 @@ int main(){
     struct sigaction saign;
     saign.sa_handler = SIG_IGN;
     sigemptyset(&saign.sa_mask);
-    saign.sa_flags = 0;
+    saign.sa_flags = SA_RESTART;//can stop system call be interupted;
     sigaction(SIGPIPE, &saign, NULL);
+
+    //set alarm and sigaction
+    struct sigaction sigam;
+    saign.sa_handler = alarmaciton;
+    sigemptyset(&saign.sa_mask);
+    saign.sa_flags = SA_RESTART;
+    sigaction(SIGALRM, &sigam, NULL);
+    alarm(ALARM_TIME);
 
 
     while(1){
@@ -106,12 +122,6 @@ int main(){
                     }
 
                     printf("client %s is connected\n", inet_ntoa(client_addr.sin_addr));
-                    curlinked++;
-
-                    //linked over half
-                    if(curlinked == MAX_EVENT/2){
-                        
-                    }
                 }else{
                     if(ee[i].events & EPOLLIN){
                         //read message from kenerl buf 
@@ -122,9 +132,7 @@ int main(){
                         if(ret == 0){
                             //link distach
                             std::cout<<"a link is detached"<<std::endl;
-                            cmm.erase(cursk);
-                            epoll_ctl(ep_fd, EPOLL_CTL_DEL, cursk, NULL);
-                            close(cursk);
+                            cmm.erase(cursk);//fullly close socket and remove all relative data
                         }else{
                             int ret = -1;
                             while(ret == -1)
