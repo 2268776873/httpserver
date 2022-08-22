@@ -1,12 +1,12 @@
 #ifndef ACTIVE
 #define ACTIVE
 
-#include <sys/time.h>
-#include <time.h>
 #include <list>
 #include <vector>
 #include <unordered_map>
 #include <iterator>
+
+
 //LRU contains timers which record last reading time and responsible to close connection
 class active_timer{
 public:
@@ -27,7 +27,6 @@ public:
     }
     void fresh(int fd){
         m[fd]->fresh();
-
     }
     void erase(int fd){
         //if connectiong is closed by client, this func is passive
@@ -41,21 +40,14 @@ public:
     int last_one(){
         return l.back().fd;
     }
-    std::vector<int> sleeper(){
-        int cur=time(0);
-        std::vector<int> sleep;
 
-        for(active_timer time : l){
-            if(time.fresh_time - cur > max_sleep_time){
-                sleep.push_back(time.fd);
-            }
-        }
-        return sleep;
-    }
+    std::vector<int> sleeper();
+
 private:
     std::list<active_timer> l;
     std::unordered_map<int,std::list<active_timer>::iterator> m;
     int max_sleep_time;
+
 };
 
 

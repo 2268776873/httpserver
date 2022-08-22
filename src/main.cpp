@@ -7,19 +7,20 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <errno.h>
-#include "threadpool.hpp"
-#include "worker.hpp"
-#include "client_manager.hpp"
+#include "threadpool.h"
+#include "worker.h"
+#include "client_manager.h"
 #include <signal.h>
 
 const char *IP="192.168.3.128";
 const int PORT=1997;
 const int MAX_EVENT=1000;
-const int ALARM_TIME=9;
-const int MAX_SLEEP_TIME=9;
+const int ALARM_TIME=3;//this time is for test;
+const int MAX_SLEEP_TIME=9;//this time is for test;
 
 void alarmaciton(int sig){
     client_manager::tik=1;
+    //std::cout<<"clocked"<<std::endl;
     alarm(ALARM_TIME);
     return;
 }
@@ -71,25 +72,24 @@ int main(){
         exit(-1);
     }
 
-    client_manager cmm(MAX_EVENT, ep_fd, MAX_SLEEP_TIME);
-    worker workthread(&cmm, ep_fd);
-    threadpool thread_pool(&workthread);
-
     //set SIGPIPE ignored
-    struct sigaction saign;
-    saign.sa_handler = SIG_IGN;
-    sigemptyset(&saign.sa_mask);
-    saign.sa_flags = SA_RESTART;//can stop system call be interupted;
-    sigaction(SIGPIPE, &saign, NULL);
+    struct sigaction sigign;
+    sigign.sa_handler = SIG_IGN;
+    sigemptyset(&sigign.sa_mask);
+    sigign.sa_flags = SA_RESTART;//can stop system call be interupted;
+    sigaction(SIGPIPE, &sigign, NULL);
 
     //set alarm and sigaction
     struct sigaction sigam;
-    saign.sa_handler = alarmaciton;
-    sigemptyset(&saign.sa_mask);
-    saign.sa_flags = SA_RESTART;
+    sigam.sa_handler = alarmaciton;
+    sigemptyset(&sigam.sa_mask);
+    sigam.sa_flags = SA_RESTART;
     sigaction(SIGALRM, &sigam, NULL);
     alarm(ALARM_TIME);
 
+    client_manager cmm(MAX_EVENT, ep_fd, MAX_SLEEP_TIME);
+    worker workthread(&cmm, ep_fd);
+    threadpool thread_pool(&workthread);
 
     while(1){
 
@@ -120,18 +120,18 @@ int main(){
                         perror("epoll_ADD");
                         exit(-1);
                     }
-
+                    cmm.add(newsock);
+                    cmm.setIP(newsock, inet_ntoa(client_addr.sin_addr));
                     printf("client %s is connected\n", inet_ntoa(client_addr.sin_addr));
                 }else{
                     if(ee[i].events & EPOLLIN){
                         //read message from kenerl buf 
                         //std::cout<<"reading"<<std::endl;
 
-                        cmm.add(cursk);
                         int ret = cmm.read(cursk);
                         if(ret == 0){
                             //link distach
-                            std::cout<<"a link is detached"<<std::endl;
+                            std::cout<<cmm.client_info_map[cursk].IP<<" is closed proactively"<<std::endl;
                             cmm.erase(cursk);//fullly close socket and remove all relative data
                         }else{
                             int ret = -1;
