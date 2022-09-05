@@ -1,4 +1,6 @@
 # httpserver
+## resource
+is copied from https://github.com/gaojingcome/WebServer .
 ## src
 src/ contains server code, main use EPOLL ET mode, client manager  mantain client information like IP and data structure needed by socket like read-write buffer. threadpool manage 10 thread and assign work to them with a task queue, each thread call true worker function in worker.cpp. active timer cooperate with alarm signal and the LRU structure in itself to shut down long sleeping or least recent used socket;
 ## test
