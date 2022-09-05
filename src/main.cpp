@@ -11,12 +11,13 @@
 #include "worker.h"
 #include "client_manager.h"
 #include <signal.h>
+#include <limits.h>
 
 const char *IP="192.168.3.128";
 const int PORT=1997;
 const int MAX_EVENT=1000;
-const int ALARM_TIME=3;//this time is for test;
-const int MAX_SLEEP_TIME=9;//this time is for test;
+const int ALARM_TIME=INT_MAX;//this time is for test;
+const int MAX_SLEEP_TIME=INT_MAX;//this time is for test;
 
 void alarmaciton(int sig){
     client_manager::tik=1;
@@ -131,7 +132,7 @@ int main(){
                         int ret = cmm.read(cursk);
                         if(ret == 0){
                             //link distach
-                            std::cout<<cmm.client_info_map[cursk].IP<<" is closed proactively"<<std::endl;
+                            std::cout<<cmm.client_info_map[cursk].IP<<" wants to close"<<std::endl;
                             cmm.erase(cursk);//fullly close socket and remove all relative data
                         }else{
                             int ret = -1;

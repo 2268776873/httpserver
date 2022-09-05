@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include "client_manager.h"
+#include "protocol_analysis.h"
 
 class worker{
 public:

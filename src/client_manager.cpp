@@ -33,6 +33,7 @@ void client_manager::clock(){
 void client_manager::write(int fd){
     char buf[BUFFER_SIZE];
     strcpy(buf, write_buf[fd].c_str()) ;
+    write_buf[fd] = "";
     send(fd, buf, sizeof(buf), 0);
 }
 
