@@ -25,22 +25,22 @@ int main(){
     
     connect(fd, (sockaddr *)&server_addr, sizeof(server_addr));
     int i=0;
+    char buf[7000];
+
     while(1){
-        std::cout<<"before send"<<std::endl;
         std::string str=std::to_string(i);
-        str+=" times communication form ";
+        str+=" times communication from ";
         str+=std::to_string(getpid());
         str+='\0';
+        std::cout<<"sended: "<<str<<std::endl;
         send(fd, str.c_str(), 300, 0);
-        std::cout<<"after send"<<std::endl;
-        char buf[1024];
-        recv(fd, buf, 1024, 0);
 
-        std::cout<<buf<<std::endl;
         memset(buf, 0, 1024);
+        recv(fd, buf, 1024, 0);
+        std::cout<<"revced: "<<buf<<std::endl;
 
         ++i;
-        usleep(1000);
+        usleep(300000);
 
     }
     

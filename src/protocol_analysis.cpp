@@ -1,7 +1,22 @@
 #include "protocol_analysis.h"
 #include <unordered_map>
-#include <fstream>
+#include <unordered_set>
+//#include <fstream>//seem not working well
 #include <sstream>
+#include <iostream>
+#include <regex>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/stat.h>  
+#include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+
+
+std::unordered_set<std::string> DEFAULT_HTML = {
+    "/index", "/register", "/login",
+    "/welcome", "/video", "/picture" };
 
 std::unordered_map<std::string, std::string> SUFFIX_TYPE = {
     { ".html",  "text/html" },
@@ -30,68 +45,101 @@ std::unordered_map<int, std::string> CODE_STATUS = {
     { 400, "Bad Request" },
     { 403, "Forbidden" },
     { 404, "Not Found" },
-};
-
-std::unordered_map<int, std::string> CODE_PATH = {
     { 400, "/400.html" },
     { 403, "/403.html" },
     { 404, "/404.html" },
 };
 
-int ana_first_line(client_info & cinfo, std::string &s){
+void ans_first_line(client_info & cinfo, std::string &line){
     //analysis head;
-    return 0;
-}
-
-int ans_head_body(client_info & cinfo, std::string &s){
-
-    return 1;
-}
-int protocal_analysis(client_info &cinfo, std::string &s){
-
-    cinfo.need_t = client_info::needtype::get;
-    cinfo.isKeepAlive = 1;
-    return 1;
-
-    int end = s.find('\n');
-    std::string cur = s.substr(0, end);
-    int demand = ana_first_line(cinfo,cur);
-    switch (demand){
-    case 0:
-        cinfo.need_t = client_info::get;
-        break;
-    case 1:
-        cinfo.need_t = client_info::post;
-        break;
-    default:
-        //not allowed
+    std::regex patten("^([^ ]*) ([^ ]*) HTTP/([^ ]*)$");
+    std::smatch subMatch;
+    if(regex_match(line, subMatch, patten)) {   
+        std::string tmp = subMatch[1];
+        if(tmp == "GET")
+            cinfo.need_t = client_info::get;
+        else if(tmp == "POST")
+            cinfo.need_t = client_info::post;
+        else
+            cinfo.need_t = client_info::wrong;
+        cinfo.target = subMatch[2];
+        cinfo.http_t = subMatch[3];
+        cinfo.pro_t = client_info::head;
+    }else{
         cinfo.need_t = client_info::wrong;
-        break;
+        return;
     }
-    int head = end + 1;
-    while(head < s.size()){
-        end = s.find('\n', head);
-        if(end == -1)
+    if(cinfo.target == "/"){
+        cinfo.target = "/index.html"; 
+    }else if(DEFAULT_HTML.count(cinfo.target))
+        cinfo.target += ".html";
+}
+
+void ans_head(client_info & cinfo, std::string &line){
+    std::regex patten("^([^:]*): ?(.*)$");
+    std::smatch subMatch;
+    //std::cout<<"in ans_head: "<<line<<std::endl;
+
+    if(regex_match(line, subMatch, patten)) {
+        cinfo.mes[subMatch[1]] = subMatch[2];
+        //std::cout<<subMatch[1]<<std::endl;
+        //std::cout<<subMatch[2]<<std::endl;
+    }
+    else {
+        cinfo.pro_t = client_info::body;
+    }
+
+}
+
+void ans_body(client_info & cinfo, std::string &line){
+    if(cinfo.need_t == client_info::post){
+
+    }else
+        cinfo.pro_t = client_info::finish;
+}
+
+int protocal_analysis(client_info &cinfo, std::string &s){
+    //std::cout<<"full mes: "<<s<<std::endl;
+    cinfo.pro_t = client_info::first;
+    int end = s.find('\n');
+    if(end == -1){
+        cinfo.need_t = client_info::wrong;
+        return -1;
+    }
+    std::string cur = s.substr(0, end-1);
+    s = s.substr(end+1);
+    ans_first_line(cinfo, cur);
+    while(cinfo.pro_t != client_info::finish && cinfo.need_t != client_info::wrong && s.size()){
+        end = s.find('\n');
+        if(end == -1){
+            cinfo.need_t = client_info::wrong;
             return -1;
-        cur = s.substr(0, end);
-        int ret = ans_head_body(cinfo, cur);
-        head = end + 1;
+        }
+        cur = s.substr(0, end-1);
+        //std::cout<<"in while: "<<cur<<std::endl;
+        if(cinfo.pro_t == client_info::head)
+            ans_head(cinfo, cur);
+        else    
+            ans_body(cinfo, cur);
+        if(end != s.size() - 1)
+            s = s.substr(end+1);
+        else
+            s.clear();
     }
-    return 1;
+    s.clear();
+    if(cinfo.mes["Connection"] == "keep-alive")
+        cinfo.isKeepAlive = 1;
+    return 0;
 }
 
 
 void addStateLine(client_info &cinfo, std::string &s){
-    if(cinfo.need_t == client_info::needtype::get){
+    if(cinfo.need_t == client_info::get){
 
 
     }
 
     s+="HTTP/1.1 "+ std::to_string(200) + " " + CODE_STATUS[200] + "\r\n";
-}
-
-std::string getContentType(){
-    return "text/html";
 }
 
 void addHeader(client_info &cinfo, std::string &s){
@@ -102,22 +150,48 @@ void addHeader(client_info &cinfo, std::string &s){
     } else{
         s += "close\r\n";
     }
-    s += "Content-type: " + getContentType() + "\r\n";
+    int dot = cinfo.target.rfind('.');
+    std::string end = cinfo.target.substr(dot);
+    s += "Content-type: " + SUFFIX_TYPE[end] + "\r\n";
 
 }
 
 void addContent(client_info &cinfo, std::string &s){
-    std::ifstream ifs;
-    ifs.open("../resources/index.html");
-    std::ostringstream tmp;
-    tmp << ifs.rdbuf();
-    std::string str = tmp.str();
-    s+="Content-length: " + std::to_string(str.size()) + "\r\n\r\n" + str.c_str();
-    ifs.close();
+    std::string src = "../resources" + cinfo.target;
+    struct stat filestat;
+    stat(src.c_str(), &filestat);
+    int file = open(src.c_str(), O_RDONLY);
+    if(!file){
+        std::cout<<"file: "<<src<<"open fail"<<std::endl;
+        return ;
+    }
+    std::cout<<"file name: "<<src<<std::endl;
+    
+    char tmp[filestat.st_size];
+    read(file, tmp, filestat.st_size);
+
+    char* mmp = (char*)mmap(0, filestat.st_size, PROT_READ, MAP_PRIVATE, file, 0);
+    if(src=="../resources/images/profile-image.jpg")
+        std::cout<<mmp<<std::endl;
+    if(*(int *)mmp == -1){
+        std::cout<<"file: "<<src<<"mmp fail"<<std::endl;
+    }
+    std::cout<<"file size: "<<filestat.st_size<<std::endl;
+    s+="Content-length: " + std::to_string(filestat.st_size) + "\r\n\r\n" + tmp;
+    close(file);
+    munmap(mmp, filestat.st_size);
 }
 
 
 int write_reply(client_info &cinfo, std::string &s){
+    //std::cout<<"wrting"<<std::endl;
+
+    //for(auto it=cinfo.mes.begin();it!=cinfo.mes.end();++it)
+        //std::cout<<it->first<<"\t"<<it->second<<std::endl;
+    // if(cinfo.need_t == client_info::wrong){
+    //     s = "error";
+    //     return 0;
+    // }
     addStateLine(cinfo, s);
     addHeader(cinfo, s);
     addContent(cinfo, s);

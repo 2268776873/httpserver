@@ -33,8 +33,13 @@ void client_manager::clock(){
 void client_manager::write(int fd){
     char buf[BUFFER_SIZE];
     strcpy(buf, write_buf[fd].c_str()) ;
+    //std::cout<<"writed: "<<write_buf[fd]<<std::endl;
+    int ret = send(fd, buf, write_buf[fd].size()+1, 0);
+    //occured error with next line code: can't read correctly
+    //send(fd, buf, BUFFER_SIZE, 0);
+    std::cout<<"writed: "<<ret<<std::endl;
     write_buf[fd] = "";
-    send(fd, buf, sizeof(buf), 0);
+
 }
 
 

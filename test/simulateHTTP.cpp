@@ -24,10 +24,7 @@ int main(){
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     
     connect(fd, (sockaddr *)&server_addr, sizeof(server_addr));
-    int i=0;
-    while(1){
-        std::string str;
-        str+="GET / HTTP/1.1\r\n\
+    std::string str="GET / HTTP/1.1\r\n\
 Host: 192.168.3.128:1997\r\n\
 Connection: keep-alive\r\n\
 Cache-Control: max-age=0\r\n\
@@ -36,17 +33,23 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n\
 Accept-Encoding: gzip, deflate\r\n\
 Accept-Language: zh-CN,zh;q=0.9\r\n\n\n";
-        str+='\0';
+    str+='\0';
+    int i=0;
+    char buf[10240];
+    while(1){
+
         send(fd, str.c_str(), 800, 0);
-        char buf[10240];
+
         recv(fd, buf, 10240, 0);
+        std::string tmp(buf);
+        std::cout<<tmp<<std::endl;
 
-        std::cout<<buf<<std::endl;
         memset(buf, 0, 10240);
+        
 
-	cout<<endl;cout<<endl;cout<<endl;cout<<endl;
+	    cout<<endl;cout<<endl;cout<<endl;cout<<endl;
         cout<<++i<<endl;
-        sleep(2);
+        sleep(5);
 
     }
     

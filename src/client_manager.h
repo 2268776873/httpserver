@@ -5,11 +5,22 @@
 #include "active_timer.h"
 
 
-const int BUFFER_SIZE = 5000;
+const int BUFFER_SIZE = 200000;
 
 struct client_info{
-    enum httptype{http1, http1_1, http2_0} http_t;
+    client_info(){
+        http_t = "";
+        IP = "";
+        target = "";
+        pro_t = first;
+        need_t = get;
+        isKeepAlive = 0;
+    }
+
+    std::string http_t;
     std::string IP;
+    std::string target;
+    enum process{first, head, body, finish} pro_t;
     enum needtype{get, post, wrong = -1} need_t;
     bool isKeepAlive;
     std::unordered_map<std::string, std::string> mes;
