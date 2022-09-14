@@ -32,11 +32,19 @@ void client_manager::clock(){
 
 void client_manager::write(int fd){
     char buf[BUFFER_SIZE];
-    strcpy(buf, write_buf[fd].c_str()) ;
+    memcpy(buf, write_buf[fd].data(), write_buf[fd].size()) ;
+    //strcpy(buf, write_buf[fd].data());
     //std::cout<<"writed: "<<write_buf[fd]<<std::endl;
-    int ret = send(fd, buf, write_buf[fd].size()+1, 0);
+    int ret = send(fd, buf, write_buf[fd].size(), 0);
     //occured error with next line code: can't read correctly
     //send(fd, buf, BUFFER_SIZE, 0);
+    //std::cout<<"ret: "<<ret<<std::endl;
+    // if(ret < write_buf[fd].size()+1){
+    //     uint8_t *pic = (uint8_t *)buf + ret;
+    //     const char * test = "just a test";
+    //     send(fd, test, 24, 0);
+    //     //send(fd, pic, write_buf[fd].size() + 1 - ret, 0);
+    // }
     std::cout<<"writed: "<<ret<<std::endl;
     write_buf[fd] = "";
 

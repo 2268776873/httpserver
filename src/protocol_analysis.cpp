@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
-
+#include <fstream>
 
 
 std::unordered_set<std::string> DEFAULT_HTML = {
@@ -38,6 +38,7 @@ std::unordered_map<std::string, std::string> SUFFIX_TYPE = {
     { ".tar",   "application/x-tar" },
     { ".css",   "text/css "},
     { ".js",    "text/javascript "},
+    { ".ico",    "image/vnd.microsoft.icon"}
 };
 
 std::unordered_map<int, std::string> CODE_STATUS = {
@@ -158,28 +159,45 @@ void addHeader(client_info &cinfo, std::string &s){
 
 void addContent(client_info &cinfo, std::string &s){
     std::string src = "../resources" + cinfo.target;
-    struct stat filestat;
-    stat(src.c_str(), &filestat);
-    int file = open(src.c_str(), O_RDONLY);
-    if(!file){
-        std::cout<<"file: "<<src<<"open fail"<<std::endl;
+
+	std::ifstream is(src.c_str(), std::ifstream::in);
+    if(is.is_open() == 0){
+        std::cout<<"file name: "<<src<<" not exist"<<std::endl;
+        s = "";
         return ;
     }
-    std::cout<<"file name: "<<src<<std::endl;
-    
-    char tmp[filestat.st_size];
-    read(file, tmp, filestat.st_size);
+    is.seekg(0, is.end);
+    int flength = is.tellg();
+    is.seekg(0, is.beg);
+    char buffer[flength];
+    is.read(buffer, flength);
+    std::string file(buffer, flength);
 
-    char* mmp = (char*)mmap(0, filestat.st_size, PROT_READ, MAP_PRIVATE, file, 0);
-    if(src=="../resources/images/profile-image.jpg")
-        std::cout<<mmp<<std::endl;
-    if(*(int *)mmp == -1){
-        std::cout<<"file: "<<src<<"mmp fail"<<std::endl;
-    }
-    std::cout<<"file size: "<<filestat.st_size<<std::endl;
-    s+="Content-length: " + std::to_string(filestat.st_size) + "\r\n\r\n" + tmp;
-    close(file);
-    munmap(mmp, filestat.st_size);
+    // struct stat filestat;
+    // stat(src.c_str(), &filestat);
+    // int file = open(src.c_str(), O_RDONLY);
+    // if(!file){
+    //     std::cout<<"file: "<<src<<"open fail"<<std::endl;
+    //     return ;
+    // }
+    // char* mmp = (char*)mmap(0, filestat.st_size, PROT_READ, MAP_PRIVATE, file, 0);
+    // if(*(int *)mmp == -1){
+    //     std::cout<<"file: "<<src<<"mmp fail"<<std::endl;
+    // }
+
+    std::cout<<"file name: "<<src<<std::endl;
+    std::cout<<"file size: "<<flength<<"  is done"<<std::endl;
+    s += "Content-length: " + std::to_string(flength) + "\r\n\r\n";
+    // if(src=="../resources/images/profile-image.jpg"){
+    //     uint8_t *pic = (uint8_t *)mmp;
+    //     s += pic;
+    // }else
+        //s+= mmp;
+
+    s += file;
+
+    // close(file);
+    // munmap(mmp, filestat.st_size);
 }
 
 
